@@ -74,7 +74,7 @@ class _InPlaceTranslatorAppState extends State<InPlaceTranslatorApp> {
     await FlutterOverlayWindow.showOverlay(
       enableDrag: false,
       flag: OverlayFlag.clickThrough, // مهم جداً: يسمح لك بعمل Scroll في المانهوا تحت الترجمة!
-      alignment: Alignment.center,
+      alignment: OverlayAlignment.center,
       width: WindowSize.fullCover,
       height: WindowSize.fullCover,
     );
