@@ -1,0 +1,62 @@
+name: Build APK
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
+          channel: 'stable'
+
+      - name: Generate missing Android folder & inject permissions
+        run: |
+          # حفظ ملفاتنا قبل التوليد
+          cp lib/main.dart /tmp/main.dart
+          cp pubspec.yaml /tmp/pubspec.yaml
+          
+          # توليد هيكل الأندرويد الكامل بلغة Kotlin
+          flutter create --platforms=android --org com.example .
+          
+          # استرجاع ملفاتنا
+          cp /tmp/main.dart lib/main.dart
+          cp /tmp/pubspec.yaml pubspec.yaml
+          
+          # نقل ملف MainActivity.kt لمكانه الصحيح
+          cp native/MainActivity.kt android/app/src/main/kotlin/com/example/live_translator/MainActivity.kt
+          
+          # رفع minSdkVersion إلى 23 ليتوافق مع ML Kit و Overlay
+          sed -i 's/minSdk = flutter.minSdkVersion/minSdk = 23/g' android/app/build.gradle
+          sed -i 's/minSdkVersion flutter.minSdkVersion/minSdkVersion 23/g' android/app/build.gradle
+
+          # حقن أذونات الشاشة والنافذة العائمة في AndroidManifest.xml
+          sed -i 's/<application/<uses-permission android:name="android.permission.INTERNET"\/><uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"\/><uses-permission android:name="android.permission.FOREGROUND_SERVICE"\/><uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION"\/><application/g' android/app/src/main/AndroidManifest.xml
+          
+          sed -i 's/<\/application>/<service android:name="flutter.overlay.window.flutter_overlay_window.OverlayService" android:exported="false" android:foregroundServiceType="specialUse"><property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" android:value="Screen translation overlay"\/><\/service><\/application>/g' android/app/src/main/AndroidManifest.xml
+
+      - name: Install dependencies and build APK
+        run: |
+          flutter pub get
+          flutter build apk --release
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Live-Translator-APK
+          path: build/app/outputs/flutter-apk/app-release.apk
