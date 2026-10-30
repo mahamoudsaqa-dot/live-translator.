@@ -130,7 +130,7 @@ class _InPlaceTranslatorAppState extends State<InPlaceTranslatorApp> {
       final List<dynamic> translatedList = jsonResp['translations'] ?? [];
 
       // 4. ربط كل ترجمة بإحداثيات الفقاعة الأصلية كنسبة مئوية من الشاشة
-      final List> bubblesPayload = [];
+      final List bubblesPayload = [];
       for (int i = 0; i < validBlocks.length; i++) {
         if (i >= translatedList.length) break;
         final rect = validBlocks[i].boundingBox;
